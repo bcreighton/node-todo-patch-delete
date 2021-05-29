@@ -9,6 +9,7 @@ const TodoService = require('./todo/todo-service')
 const xss = require('xss')
 const jsonParser = express.json()
 const path = require('path')
+const { reset } = require('nodemon')
 
 const app = express()
 
@@ -91,8 +92,38 @@ app
   .get((req, res, next) => {
     res.json(serializeTodo(res.todo))
   })
-  .patch(/* Your code here */)
-  .delete(/* Your code here */)
+  .patch(jsonParser,(req, res, next) => {
+    const newTodo = req.body;
+    const {title} = newTodo;
+
+    if(!title) {
+      return res.status(400).json({
+        error: {
+          message: 'Bad data'
+        }
+      })
+    }
+
+    TodoService.updateTodo(
+      req.app.get('db'),
+      req.params.todo_id,
+      serializeTodo(newTodo)
+    )
+    .then(todo => {
+      res.status(200).json(todo[0])
+    })
+    .catch(next)
+  })
+  .delete((req, res, next) => {
+    TodoService.deleteTodo(
+      req.app.get('db'),
+      req.params.todo_id
+    )
+    .then(todo => {
+      res.status(204).end()
+    })
+    .catch(next)
+  })
 
 
 app.use(errorHandler)
